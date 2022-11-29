@@ -1,0 +1,28 @@
+BasedOnStyle: LLVM
+
+AlignAfterOpenBracket: DontAlign
+AlignEscapedNewlines: Left
+AlignOperands:   DontAlign
+BreakInheritanceList: AfterColon
+BreakConstructorInitializers: AfterColon
+ContinuationIndentWidth: 2
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+SpaceBeforeRangeBasedForLoopColon: false
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
+LambdaBodyIndentation: OuterScope
+PackConstructorInitializers: NextLine
+FixNamespaceComments: false
+
+IncludeCategories:
+  - Regex: '"precompiled.hpp"'
+    Priority: -1
+  - Regex: '".*"'
+    Priority: 1
+  - Regex: '<.*\.h>'
+    Priority: 2
+  - Regex: '<.*>'
+    Priority: 3
