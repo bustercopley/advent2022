@@ -1,28 +1,42 @@
 #include "precompiled.hpp"
-#include <cmath>
 
 auto regex = re::regex(R"((\d+)?)");
 
+// Mabye insert into sorted container dropping last element
+template <typename T> auto insert(auto &top, T &&candidate, auto &&comp) {
+  auto n = std::size(top) - 1;
+  if (comp(top[n], candidate)) {
+    while (n && comp(top[n - 1], candidate)) {
+      top[n] = top[n - 1];
+      --n;
+    }
+    top[n] = (T &&) candidate;
+  }
+}
+
+template <typename T> auto insert(auto &top, T &&candidate) {
+  return insert(top, (T &&) candidate, std::less<>{});
+}
+
 void solve(std::istream &stream) {
-  std::uint64_t max[4]{};
-  std::uint64_t total{};
+  std::uint64_t top[3]{};
+  std::uint64_t calories{};
+
   for (std::string line; std::getline(stream, line);) {
     if (auto m = match(regex, line)) {
       if (matched(m, 1)) {
-        total += string_to<std::uint64_t>(match_string(m, 1));
+        calories += string_to<std::uint64_t>(match_string(m, 1));
       } else {
-        max[3] = total;
-        std::ranges::sort(max, std::greater<>{});
-        total = 0;
+        insert(top, calories);
+        calories = 0;
       }
     }
   }
-  max[3] = total;
-  std::ranges::sort(max, std::greater<>{});
+  insert(top, calories);
 
   std::printf("Part 1 result %llu\n"
               "Part 2 result %llu\n",
-    max[0], max[0] + max[1] + max[2]);
+    top[0], top[0] + top[1] + top[2]);
 }
 
 int main() {
@@ -31,6 +45,7 @@ int main() {
   for (auto pattern: {"test/%02d", "input/%02d"}) {
     auto filename = string_printf(pattern, day);
     if (std::ifstream stream(std::data(filename)); stream) {
+      std::printf("\nReading file %s\n", std::data(filename));
       solve(stream);
     }
   }
