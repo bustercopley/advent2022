@@ -1,13 +1,17 @@
 #include "precompiled.hpp"
 
-template <std::size_t N> std::size_t start_of_message(const std::string &line) {
-  if (std::size(line) >= N) {
-    for (std::size_t n{}; n != std::size(line) - N; ++n) {
-      char range[N];
-      std::copy(&line[n], &line[n + N], range);
-      std::ranges::sort(range);
-      if (std::empty(std::ranges::unique(range))) {
-        return n + N;
+std::size_t start_of_message(const std::string &line, std::size_t size) {
+  int histogram[26]{};
+  std::size_t count_distinct{};
+  if (std::size(line) >= size) {
+    for (std::size_t n{}; n != size; ++n) {
+      count_distinct += !histogram[line[n] - 'a']++;
+    }
+    for (std::size_t n{}; n != std::size(line) - size; ++n) {
+      count_distinct += !histogram[line[n + size] - 'a']++;
+      count_distinct -= !--histogram[line[n] - 'a'];
+      if (count_distinct == size) {
+        return n + size + 1;
       }
     }
   }
@@ -19,8 +23,8 @@ void solve(std::istream &stream) {
   std::uint64_t result2{};
 
   for (std::string line; std::getline(stream, line);) {
-    result1 = start_of_message<4>(line);
-    result2 = start_of_message<14>(line);
+    result1 = start_of_message(line, 4);
+    result2 = start_of_message(line, 14);
   }
 
   std::printf("Part 1 result %llu\n"
