@@ -46,8 +46,8 @@ void solve(std::istream &stream) {
     }
   }
 
-  for (auto stacks: {stacks1, stacks2}) {
-    for (auto stack: stacks) { std::printf("%c", stack.back()); }
+  for (const auto &stacks: {stacks1, stacks2}) {
+    for (const auto &stack: stacks) { std::printf("%c", stack.back()); }
     std::printf("\n");
   }
 }
