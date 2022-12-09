@@ -1,92 +1,58 @@
 #include "precompiled.hpp"
 
-void solve(std::istream &stream) {
-  int result1{};
-  int result2{};
+constexpr std::tuple<int, int> directions[]{{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
 
+void solve(std::istream &stream) {
   std::vector<std::string> trees;
   for (std::string line; std::getline(stream, line);) { trees.push_back(line); }
-  result1 = 2 * (std::size(trees) + std::size(trees[0]) - 2);
-  for (int i = 1; i != (int)std::size(trees) - 1; ++i) {
-    for (int j = 1; j != (int)std::size(trees[i]) - 1; ++j) {
+  int h = std::size(trees);
+  int w = std::size(trees[0]);
+  int result1{2 * h + 2 * w - 4};
+  int result2{};
 
-      auto u1 = [&]() {
-        for (int k = 0; k != i; ++k) {
-          if (trees[i - k - 1][j] >= trees[i][j]) {
+  for (int y = 1; y != h - 1; ++y) {
+    for (int x = 1; x != w - 1; ++x) {
+
+      auto next = [=](auto x, auto y, auto direction) {
+        auto [dx, dy] = direction;
+        auto x1 = x + dx;
+        auto y1 = y + dy;
+        auto ok = 0 <= x1 && x1 < w && 0 <= y1 && y1 < h;
+        return std::make_tuple(x1, y1, ok);
+      };
+
+      auto is_visible = [=](auto direction) {
+        for (auto [x1, y1, ok] = next(x, y, direction); ok;
+             std::tie(x1, y1, ok) = next(x1, y1, direction)) {
+          if (trees[y1][x1] >= trees[y][x]) {
             return false;
           }
         }
         return true;
       };
 
-      auto l1 = [&]() {
-        for (int k = 0; k != j; ++k) {
-          if (trees[i][j - k - 1] >= trees[i][j]) {
-            return false;
+      auto get_score = [=](auto direction) {
+        int score = 0;
+        for (auto [x1, y1, ok] = next(x, y, direction); ok;
+             std::tie(x1, y1, ok) = next(x1, y1, direction)) {
+          ++score;
+          if (trees[y1][x1] >= trees[y][x]) {
+            break;
           }
         }
-        return true;
+        return score;
       };
 
-      auto d1 = [&]() {
-        for (int k = i + 1; k != (int)std::size(trees); ++k) {
-          if (trees[k][j] >= trees[i][j]) {
-            return false;
-          }
-        }
-        return true;
-      };
-
-      auto r1 = [&]() {
-        for (int k = j + 1; k != (int)std::size(trees[i]); ++k) {
-          if (trees[i][k] >= trees[i][j]) {
-            return false;
-          }
-        }
-        return true;
-      };
-
-      auto u2 = [&]() {
-        for (int k = 0; k != i; ++k) {
-          if (trees[i - k - 1][j] >= trees[i][j]) {
-            return k + 1;
-          }
-        }
-        return i;
-      };
-
-      auto l2 = [&]() {
-        for (int k = 0; k != j; ++k) {
-          if (trees[i][j - k - 1] >= trees[i][j]) {
-            return k + 1;
-          }
-        }
-        return j;
-      };
-
-      auto d2 = [&]() {
-        for (int k = i + 1; k != (int)std::size(trees); ++k) {
-          if (trees[k][j] >= trees[i][j]) {
-            return k - i;
-          }
-        }
-        return (int)std::size(trees) - i - 1;
-      };
-
-      auto r2 = [&]() {
-        for (int k = j + 1; k != (int)std::size(trees[i]); ++k) {
-          if (trees[i][k] >= trees[i][j]) {
-            return k - j;
-          }
-        }
-        return (int)std::size(trees[i]) - j - 1;
-      };
-
-      result1 += u1() || d1() || l1() || r1();
-      result2 = std::max(result2, u2() * l2() * d2() * r2());
+      bool visible = false;
+      int score = 1;
+      for (auto direction: directions) {
+        visible = visible || is_visible(direction);
+        score = score * get_score(direction);
+      }
+      result1 += visible;
+      result2 = std::max(result2, score);
     }
   }
-
   std::printf("Part 1 result %d\n"
               "Part 2 result %d\n",
     result1, result2);
