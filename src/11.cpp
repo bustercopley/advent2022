@@ -50,15 +50,15 @@ void solve(std::istream &stream) {
     }
   }
 
-  std::int64_t result1{};
-  std::int64_t result2{};
+  std::int64_t results[2]{};
   std::int64_t modulus = 1;
   const int N = std::size(monkeys);
   for (auto &m: monkeys) { modulus *= m.test; }
-  {
+  int days[2][2]{{3, 20}, {1, 10000}};
+  for (int day = 0; const auto [divisor, repeats]: days) {
     std::vector<monkey> monkeys1;
     std::ranges::copy(monkeys, std::back_inserter(monkeys1));
-    for (int i = 0; i != 20 * N; ++i) {
+    for (int i = 0; i != repeats * N; ++i) {
       monkey &m = monkeys1[i % N];
       m.inspections += std::size(m.items);
       for (auto item: m.items) {
@@ -73,7 +73,7 @@ void solve(std::istream &stream) {
           item *= item;
           break;
         }
-        item /= 3;
+        item /= divisor;
         item %= modulus;
         if (item % m.test == 0) {
           monkeys1[m.targets[0]].items.push_back(item);
@@ -83,45 +83,14 @@ void solve(std::istream &stream) {
       }
       m.items.clear();
     }
-    std::ranges::sort(monkeys1,
-      [](auto &a, auto &b) { return a.inspections > b.inspections; });
-    result1 = monkeys1[0].inspections * monkeys1[1].inspections;
+    std::ranges::nth_element(monkeys1, std::next(std::ranges::begin(monkeys1)),
+      std::greater<>{}, [](const auto &a) { return a.inspections; });
+    results[day++] = monkeys1[0].inspections * monkeys1[1].inspections;
   }
 
-  {
-    std::vector<monkey> monkeys2;
-    std::ranges::copy(monkeys, std::back_inserter(monkeys2));
-    for (int i = 0; i != 10000 * N; ++i) {
-      monkey &m = monkeys2[i % N];
-      m.inspections += std::size(m.items);
-      for (auto item: m.items) {
-        switch (m.op) {
-        case opcode::multiply:
-          item *= m.arg;
-          break;
-        case opcode::add:
-          item += m.arg;
-          break;
-        case opcode::square:
-          item *= item;
-          break;
-        }
-        item %= modulus;
-        if (item % m.test == 0) {
-          monkeys2[m.targets[0]].items.push_back(item);
-        } else {
-          monkeys2[m.targets[1]].items.push_back(item);
-        }
-      }
-      m.items.clear();
-    }
-    std::ranges::sort(monkeys2,
-      [](auto &a, auto &b) { return a.inspections > b.inspections; });
-    result2 = monkeys2[0].inspections * monkeys2[1].inspections;
-  }
   std::printf("Part 1 result %lld\n"
               "Part 2 result %lld\n",
-    result1, result2);
+    results[0], results[1]);
 }
 
 int main() {
