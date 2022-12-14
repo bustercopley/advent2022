@@ -53,11 +53,12 @@ void solve(std::istream &stream) {
     constexpr int halt = 2;
     int result = 0;
     int state = at_rest;
+    std::vector<std::tuple<int, int>> path;
     std::tuple<int, int> position;
     auto &[x, y] = position;
     while (state != halt) {
       if (state == at_rest) {
-        position = source;
+        position = std::empty(path) ? source : path.back();
         state = falling;
       }
       if (state == falling) {
@@ -66,15 +67,19 @@ void solve(std::istream &stream) {
         } else {
           if ((part == 0 || y < floor) && is_open(x, y + 1)) {
             ++y;
+            path.push_back(position);
           } else if ((part == 0 || y < floor) && is_open(x - 1, y + 1)) {
             ++y;
             --x;
+            path.push_back(position);
           } else if ((part == 0 || y < floor) && is_open(x + 1, y + 1)) {
             ++y;
             ++x;
+            path.push_back(position);
           } else {
             insert(x, y, 'o');
             state = at_rest;
+            path.pop_back();
             if (position == source) {
               state = halt;
             }
