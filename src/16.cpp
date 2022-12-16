@@ -5,21 +5,31 @@ auto regex = re::regex(
 
 auto regex2 = re::regex(R"(^(\w+)(?:, )?(.*)$)");
 
+template <typename T> struct matrix2 {
+  matrix2(int m, int n): n(n), data(m * n) {}
+  matrix2(int m, int n, T init): n(n), data(m * n, init) {}
+  auto &operator[](int i, int j) { return data[i * n + j]; }
+  auto operator[](int i, int j) const { return data[i * n + j]; }
+
+private:
+  int n;
+  std::vector<T> data;
+};
+
 auto get_shortest_paths(const std::vector<std::vector<int>> &tunnels) {
   auto size = (int)std::size(tunnels);
-  std::vector<std::vector<int>> paths(size,
-    std::vector<int>(size, std::numeric_limits<int>::max() / 2));
+  matrix2<int> paths(size, size, std::numeric_limits<int>::max() / 2);
 
   for (int i{}; auto js: tunnels) {
-    for (int j: js) { paths[i][j] = 1; }
-    paths[i][i] = 0;
+    for (int j: js) { paths[i, j] = 1; }
+    paths[i, i] = 0;
     ++i;
   }
   // https://en.wikipedia.org/wiki/Floyd-Warshall_algorithm
   for (int k{}; k != size; ++k) {
     for (int i{}; i != size; ++i) {
       for (int j{}; j != size; ++j) {
-        paths[i][j] = std::min(paths[i][j], paths[i][k] + paths[k][j]);
+        paths[i, j] = std::min(paths[i, j], paths[i, k] + paths[k, j]);
       }
     }
   }
@@ -30,12 +40,15 @@ auto part1(int position, int time, auto &valves, const auto &paths,
   const auto &rates) -> int {
 
   int score{};
-  for (int dst{}; auto t: paths[position]) {
-    if (rates[dst] && !valves[dst] && time >= t + 1) {
-      valves[dst] = true;
-      int candidate = part1(dst, time - t - 1, valves, paths, rates);
-      valves[dst] = false; // backtrack
-      score = std::max(score, candidate + (time - t - 1) * rates[dst]);
+  for (int dst{}; auto rate: rates) {
+    if (rate && !valves[dst]) {
+      auto t = paths[position, dst];
+      if (time >= t + 1) {
+        valves[dst] = true;
+        int candidate = part1(dst, time - t - 1, valves, paths, rates);
+        valves[dst] = false; // backtrack
+        score = std::max(score, candidate + (time - t - 1) * rate);
+      }
     }
     ++dst;
   }
@@ -46,13 +59,16 @@ auto part2(int p1, int p2, int t1, int t2, auto &valves, const auto &paths,
   const auto &rates) -> int {
 
   int score{};
-  for (int dst{}; auto t: paths[p1]) {
-    if (rates[dst] && !valves[dst] && t1 >= t + 1) {
-      valves[dst] = true;
-      // For the next turn the players' roles are reversed
-      int candidate = part2(p2, dst, t2, t1 - t - 1, valves, paths, rates);
-      valves[dst] = false; // backtrack
-      score = std::max(score, candidate + (t1 - t - 1) * rates[dst]);
+  for (int dst{}; auto rate: rates) {
+    if (rate && !valves[dst]) {
+      auto t = paths[p1, dst];
+      if (t1 >= t + 1) {
+        valves[dst] = true;
+        // For the next turn the players' roles are reversed
+        int candidate = part2(p2, dst, t2, t1 - t - 1, valves, paths, rates);
+        valves[dst] = false; // backtrack
+        score = std::max(score, candidate + (t1 - t - 1) * rates[dst]);
+      }
     }
     ++dst;
   }
@@ -84,8 +100,9 @@ void solve(std::istream &stream) {
   std::vector<bool> valves(names.size());
 
   // Find best scores recursively
-  auto result1 = part1(names["AA"], 30, valves, paths, rates);
-  auto result2 = part2(names["AA"], names["AA"], 26, 26, valves, paths, rates);
+  auto start = names["AA"];
+  auto result1 = part1(start, 30, valves, paths, rates);
+  auto result2 = part2(start, start, 26, 26, valves, paths, rates);
   std::printf("Part 1 result %d\n"
               "Part 2 result %d\n",
     result1, result2);
