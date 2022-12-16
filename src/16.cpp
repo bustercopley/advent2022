@@ -7,29 +7,29 @@ auto regex2 = re::regex(R"(^(\w+)(?:, )?(.*)$)");
 
 auto get_shortest_paths(const std::vector<std::vector<int>> &tunnels) {
   std::map<std::pair<int, int>, int> paths;
-  std::vector<std::pair<int, int>> stacks[2];
-  // Record all the zero-length paths and put them on the stack to be processed
+  std::vector<std::pair<int, int>> new_paths;
+  // Record all the zero-length paths and mark them to be processed
   for (int src{}; auto tunnel: tunnels) {
-    std::pair<int, int> path{src, src};
-    stacks[0].push_back(path);
+    auto path = std::make_pair(src, src);
+    new_paths.push_back(path);
     paths.emplace(path, 0);
     ++src;
   }
   int time{};
-  while (!std::empty(stacks[0])) {
+  while (!std::empty(new_paths)) {
     ++time;
-    // Process all the paths from last time
-    for (auto [src, dst]: stacks[0]) {
+    // Shift paths 'to be processed next time' into paths 'from last time'
+    std::vector<std::pair<int, int>> old_paths(std::move(new_paths));
+    // Process the paths from last time
+    for (auto [src, dst]: old_paths) {
       for (auto next: tunnels[dst]) {
-        std::pair<int, int> path{src, next};
+        auto path = std::make_pair(src, next);
         if (auto [_, emplaced] = paths.try_emplace(path, time); emplaced) {
-          // Found a path with one more step; process it again next time
-          stacks[1].push_back(path);
+          // Found a path with one more step; mark it to be processed next time
+          new_paths.push_back(path);
         }
       }
     }
-    // Shift paths 'to be processed next time' into paths 'from last time'.
-    stacks[0] = std::move(stacks[1]);
   }
   return paths;
 }
@@ -39,9 +39,9 @@ auto part1(int position, int time, auto &valves, const auto &paths,
 
   int score{};
   auto [begin, end] = paths.equal_range(position);
-  for (auto [src1, path]: std::ranges::subrange(begin, end)) {
+  for (auto [_, path]: std::ranges::subrange(begin, end)) {
     auto [dst, t] = path;
-    if (!valves[dst] && rates[dst] && time >= t + 1) {
+    if (!valves[dst] && time >= t + 1) {
       valves[dst] = true;
       int candidate = part1(dst, time - t - 1, valves, paths, rates);
       valves[dst] = false; // backtrack
@@ -56,9 +56,9 @@ auto part2(int p1, int p2, int t1, int t2, auto &valves, const auto &paths,
 
   int score{};
   auto [begin, end] = paths.equal_range(p1);
-  for (auto [src1, path]: std::ranges::subrange(begin, end)) {
+  for (auto [_, path]: std::ranges::subrange(begin, end)) {
     auto [dst, t] = path;
-    if (!valves[dst] && rates[dst] && t1 >= t + 1) {
+    if (!valves[dst] && t1 >= t + 1) {
       valves[dst] = true;
       // For the next turn the players' roles are reversed
       int candidate = part2(p2, dst, t2, t1 - t - 1, valves, paths, rates);
@@ -91,7 +91,7 @@ void solve(std::istream &stream) {
 
   // Get the shortest paths in the form '[src, dst] -> length', then convert to
   // 'src -> [dst, length]', omitting zero-length paths and paths to or from
-  // valves with rate 0, but keeping paths out of the start node.
+  // valves with rate 0, but keeping paths which start at the start node.
   std::multimap<int, std::pair<int, int>> paths;
   for (auto [path, time]: get_shortest_paths(tunnels)) {
     auto [src, dst] = path;
