@@ -35,7 +35,6 @@ void solve(std::istream &stream) {
   int external_surface_area{};
 
   std::set<point> volume;
-  int total_surface_area{};
   for (std::string line; std::getline(stream, line);) {
     if (auto m = match(regex, line)) {
       int x = string_to<int>(match_view(m, 1, line));
@@ -57,7 +56,6 @@ void solve(std::istream &stream) {
     auto face = std::make_pair(*volume.begin(), directions[0]);
     std::vector<std::pair<point, point>> stack{face};
     std::set<std::pair<point, point>> already{face};
-    int external_surface_area{};
     while (!std::empty(stack)) {
       ++external_surface_area;
       auto [p, f] = stack.back();
@@ -65,13 +63,13 @@ void solve(std::istream &stream) {
       for (auto d: directions) {
         if (orthogonal(f, d)) {
           //        +----+
-          //        |\    \
-          //        | +----+     +--- +----+     +----+
-          //   +----+ |    |    / d->/    /|    / d->/|
-          //   |\ d->\|    |   +----+----+ |   +----+ |
-          //   | +----+----+   |    |    | +   |    | +
-          //   + |    |        |    |    |/    |    |/
-          //    \|    |        +----+----+     +----+
+          //        |\    \      +--- +----+     +----+
+          //        | +----+    / d->/    /|    / d->/|
+          //   +----+ |    |   +----+----+ |   +----+ |
+          //   |\ d->\|    |   |    |    | +   |    | +
+          //   | +----+----+   |    |    |/    |    |/
+          //   + |    |        +----+----+     +----+
+          //    \|    |
           //     +----+
           std::pair<point, point> cases[]{
             {add(add(p, f), d), negate(d)},
