@@ -33,6 +33,15 @@ int get_score(const auto &cost, int time, auto &robots, auto &materials,
         continue;
       }
 
+      // Prune 3: already making as much of this resource as we can spend
+      if (i < 3) {
+        auto max = std::max(std::max(cost[0][i], cost[1][i]),
+                            std::max(cost[2][i], cost[3][i]));
+        if (robots[i] >= max) {
+          continue;
+        }
+      }
+
       // What is our best score if we build this robot today?
       if (log[time][i]) {
         materials[0] += robots[0] - cost[i][0];
