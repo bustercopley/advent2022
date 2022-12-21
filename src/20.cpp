@@ -1,51 +1,42 @@
 #include "precompiled.hpp"
 
-auto regex = re::regex(R"((-?\d+))");
-
 void solve(std::istream &stream) {
   std::int64_t results[2]{};
-  std::vector<std::int64_t> l;
-  l.reserve(5000);
+  std::vector<std::int64_t> lists[2];
+  lists[0].reserve(5000);
   for (std::string line; std::getline(stream, line);) {
-    if (auto m = match(regex, line)) {
-      l.push_back(string_to<std::int64_t>(match_view(m, 1, line)));
-    }
+    lists[0].push_back(string_to<std::int64_t>(line));
   }
-  const int n = (int)std::size(l);
-  auto saved_copy = l;
+  const int n = (int)std::size(lists[0]);
+  lists[1] = lists[0];
+  for (auto &element: lists[1]) { element *= 811589153ll; }
 
   for (int is_part_two = 0; is_part_two != 2; ++is_part_two) {
-    if (is_part_two) {
-      l = std::move(saved_copy);
-      for (auto &element: l) { element *= 811589153ll; }
-    }
-
+    const auto &l = lists[is_part_two];
     // Initialize p to the identity permutation
     std::vector<int> p(n);
     for (int i{}; i != n; ++i) { p[i] = i; }
 
     for (int repeats = 0; repeats != (is_part_two ? 10 : 1); ++repeats) {
       for (int i{}; i != n; ++i) {
-        // Locate the element to move
-        int j{};
-        while (p[j] != i) ++j;
-        // Find the direction and magnitude of the movement
+        // Find the number of positions to move by
         // Moving an element n - 1 positions has no effect
-        int d = (l[i] > 0) - (l[i] < 0);
-        int m = (int)(std::abs(l[i]) % (n - 1));
-        // Shift m elements backwards one position
-        for (std::int64_t k{0}; k != m; ++k) {
-          int r = (j + n + d) % n;
-          p[j] = p[r];
-          j = r;
+        if (int m = ((int)(l[i] % (n - 1)) + (n - 1)) % (n - 1)) {
+          // Locate the element to move and the position to move it to
+          int j = std::ranges::find(p, i) - std::begin(p);
+          int k = (j + m) % n;
+          // That's a rotate
+          if (k > j) {
+            std::rotate(&p[j], &p[j + 1], &p[k + 1]);
+          } else {
+            std::rotate(&p[k + 1], &p[j], &p[j + 1]);
+          }
         }
-        // Move the element into the gap
-        p[j] = i;
       }
     }
 
-    int j{};
-    while (l[p[j]]) ++j;
+    int i = std::ranges::find(l, 0) - std::begin(l);
+    int j = std::ranges::find(p, i) - std::begin(p);
     results[is_part_two] =
       l[p[(j + 1000) % n]] + l[p[(j + 2000) % n]] + l[p[(j + 3000) % n]];
   }
