@@ -5,7 +5,7 @@ auto regex = re::regex(R"(^(\w+): (?:(-?\d+)|(\w+) (.) (\w+))$)");
 
 struct node {
   char op;
-  mpq_class value;
+  mpq_class rs[2];
   int children[2];
 };
 
@@ -20,7 +20,7 @@ void solve(std::istream &stream) {
       auto &node = nodes[index];
       if (matched(m, 2)) {
         node.op = '\0';
-        node.value = string_to<int>(match_view(m, 2, line));
+        node.rs[0] = string_to<int>(match_view(m, 2, line));
       } else {
         node.op = match_view(m, 4, line)[0];
         node.children[0] = (int)names[match_string(m, 3)];
@@ -29,42 +29,75 @@ void solve(std::istream &stream) {
     }
   }
 
-  int root = (int)names["root"];
-  if (nodes[root].op) {
-    std::vector<int> stack{{root}};
-    while (!stack.empty()) {
-      auto &[op, value, children] = nodes[stack.back()];
-      auto [a, b] = children;
-      if (nodes[a].op == '\0' && nodes[b].op == '\0') {
-        switch (op) {
-        case '+':
-          value = nodes[a].value + nodes[b].value;
-          break;
-        case '-':
-          value = nodes[a].value - nodes[b].value;
-          break;
-        case '*':
-          value = nodes[a].value * nodes[b].value;
-          break;
-        case '/': // divide
-          value = nodes[a].value / nodes[b].value;
-          break;
-        default:
+  auto reduce_node = [&](int index) -> bool {
+    auto &[op, rs, children] = nodes[index];
+    auto &a = nodes[children[0]];
+    auto &b = nodes[children[1]];
+    if (a.op == '\0' && b.op == '\0') {
+      switch (op) {
+      case '+':
+        rs[0] = a.rs[0] + b.rs[0];
+        rs[1] = a.rs[1] + b.rs[1];
+        break;
+      case '-':
+        rs[0] = a.rs[0] - b.rs[0];
+        rs[1] = a.rs[1] - b.rs[1];
+        break;
+      case '*':
+        if (a.rs[1] != 0 && b.rs[1] != 0) {
+          std::cout << "Quadratic term\n";
           std::exit(1);
         }
-        op = '\0';
-        stack.pop_back();
-      } else {
-        if (nodes[a].op) {
-          stack.push_back(a);
+        rs[0] = a.rs[0] * b.rs[0];
+        rs[1] = a.rs[0] * b.rs[1] + a.rs[1] * b.rs[0];
+        break;
+      case '/': // divide
+        if (a.rs[1] != 0 && b.rs[1] != 0) {
+          std::cout << "Reciprocal term\n";
+          std::exit(1);
         }
-        if (nodes[b].op) {
-          stack.push_back(b);
+        rs[0] = a.rs[0] / b.rs[0];
+        rs[1] = a.rs[1] / b.rs[0];
+        break;
+      default:
+        std::exit(1);
+      }
+      op = '\0';
+      return true;
+    }
+    return false;
+  };
+
+  int root = (int)names["root"];
+  int humn = (int)names["humn"];
+  mpq_class humn_value = nodes[humn].rs[0];
+  nodes[humn].rs[0] = 0;
+  nodes[humn].rs[1] = 1;
+
+  std::vector<int> stack{{nodes[root].children[0], nodes[root].children[1]}};
+  while (!stack.empty()) {
+    if (reduce_node(stack.back())) {
+      stack.pop_back();
+    } else {
+      for (int i = 0; i != 2; ++i) {
+        auto index = nodes[stack.back()].children[i];
+        if (nodes[index].op) {
+          stack.push_back(index);
         }
       }
     }
   }
-  gmp_printf("Part 1 result %Qd\n", nodes[root].value.get_mpq_t());
+
+  auto [l, r] = nodes[root].children;
+  if (nodes[r].rs[1] != 0) {
+    std::swap(l, r);
+  }
+  mpq_class result2 = (nodes[r].rs[0] - nodes[l].rs[0]) / nodes[l].rs[1];
+  reduce_node(root);
+  const auto &rs = nodes[root].rs;
+  mpq_class result1 = rs[0] + rs[1] * humn_value;
+
+  gmp_printf("Part 1 result %Qd\n" "Part 2 result %Qd\n", result1, result2);
 }
 
 int main() {
