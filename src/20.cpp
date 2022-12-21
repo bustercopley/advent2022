@@ -19,18 +19,16 @@ void solve(std::istream &stream) {
 
     for (int repeats = 0; repeats != (is_part_two ? 10 : 1); ++repeats) {
       for (int i{}; i != n; ++i) {
-        // Find the number of positions to move by
+        // Locate the element to move
+        int j = std::ranges::find(p, i) - std::begin(p);
+        // Calculate the position to move it to
         // Moving an element n - 1 positions has no effect
-        if (int m = ((int)(l[i] % (n - 1)) + (n - 1)) % (n - 1)) {
-          // Locate the element to move and the position to move it to
-          int j = std::ranges::find(p, i) - std::begin(p);
-          int k = (j + m) % n;
-          // That's a rotate
-          if (k > j) {
-            std::rotate(&p[j], &p[j + 1], &p[k + 1]);
-          } else {
-            std::rotate(&p[k + 1], &p[j], &p[j + 1]);
-          }
+        int k = ((int)(l[i] % (n - 1)) + (n - 1) + j) % (n - 1);
+        // That's a rotate
+        if (k > j) {
+          std::rotate(&p[j], &p[j + 1], &p[k + 1]);
+        } else {
+          std::rotate(&p[k], &p[j], &p[j + 1]);
         }
       }
     }
