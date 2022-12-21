@@ -49,6 +49,8 @@ OBJECTS=re.o string_printf.o
 01_LDLIBS=
 01_CPPFLAGS=
 
+21_LDLIBS=-lgmp
+
 # Config-specific options.
 release_CPPFLAGS=-DNDEBUG
 release_CFLAGS=-O3 -ggdb3
